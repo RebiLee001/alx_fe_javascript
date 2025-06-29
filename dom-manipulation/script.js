@@ -154,41 +154,45 @@ function showNotification(message) {
   statusBox.innerText = message;
 }
 
-function fetchQuotesFromServer() {
-  return fetch(API_URL)
-    .then((res) => res.json())
-    .then((data) =>
-      data.slice(0, 3).map((post) => ({ text: post.title, category: "Server" }))
-    )
-    .catch(() => []);
+async function fetchQuotesFromServer() {
+  try {
+    const res = await fetch(API_URL);
+    const data = await res.json();
+    return data
+      .slice(0, 3)
+      .map((post) => ({ text: post.title, category: "Server" }));
+  } catch (err) {
+    console.error("Error fetching from server:", err);
+    return [];
+  }
 }
 
-function postQuoteToServer(quote) {
-  fetch(API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(quote),
-  })
-    .then((res) => res.json())
-    .then(() => console.log("Quote posted to server."))
-    .catch((err) => console.error("Post failed", err));
+async function postQuoteToServer(quote) {
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(quote),
+    });
+    const data = await res.json();
+    console.log("Quote posted:", data);
+  } catch (err) {
+    console.error("Post failed:", err);
+  }
 }
 
-function syncQuotes() {
-  fetchQuotesFromServer().then((serverQuotes) => {
-    if (serverQuotes.length) {
-      quotes = serverQuotes.concat(quotes);
-      saveQuotes();
-      populateCategories();
-      showNotification(
-        `Synced with server at ${new Date().toLocaleTimeString()}`
-      );
-    } else {
-      showNotification("No new server data. Using local only.");
-    }
-  });
+async function syncQuotes() {
+  const serverQuotes = await fetchQuotesFromServer();
+  if (serverQuotes.length) {
+    quotes = serverQuotes.concat(quotes);
+    saveQuotes();
+    populateCategories();
+    showNotification(
+      `Synced with server at ${new Date().toLocaleTimeString()}`
+    );
+  } else {
+    showNotification("No new server data. Using local only.");
+  }
 }
 
 newQuoteBtn.addEventListener("click", showRandomQuote);
