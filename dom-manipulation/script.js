@@ -68,7 +68,8 @@ function addQuote() {
   quotes.push(newQuote);
   saveQuotes();
   populateCategories();
-  alert("Quote added successfully!");
+  postQuoteToServer(newQuote);
+  showNotification("Quote added and synced to server.");
   document.getElementById("newQuoteText").value = "";
   document.getElementById("newQuoteCategory").value = "";
 }
@@ -117,7 +118,7 @@ function importFromJsonFile(event) {
       quotes.push(...importedQuotes);
       saveQuotes();
       populateCategories();
-      alert("Quotes imported successfully!");
+      showNotification("Quotes imported successfully!");
     } catch (error) {
       alert("Failed to import quotes. Invalid JSON file.");
     }
@@ -143,22 +144,51 @@ function filterQuotes() {
   showRandomQuote();
 }
 
-function syncWithServer() {
-  fetch(API_URL)
+function showNotification(message) {
+  let statusBox = document.getElementById("syncStatus");
+  if (!statusBox) {
+    statusBox = document.createElement("div");
+    statusBox.id = "syncStatus";
+    document.body.appendChild(statusBox);
+  }
+  statusBox.innerText = message;
+}
+
+function fetchQuotesFromServer() {
+  return fetch(API_URL)
     .then((res) => res.json())
-    .then((serverData) => {
-      const serverQuotes = serverData.slice(0, 3).map((post) => ({
-        text: post.title,
-        category: "Server",
-      }));
+    .then((data) =>
+      data.slice(0, 3).map((post) => ({ text: post.title, category: "Server" }))
+    )
+    .catch(() => []);
+}
+
+function postQuoteToServer(quote) {
+  fetch(API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(quote),
+  })
+    .then((res) => res.json())
+    .then(() => console.log("Quote posted to server."))
+    .catch((err) => console.error("Post failed", err));
+}
+
+function syncQuotes() {
+  fetchQuotesFromServer().then((serverQuotes) => {
+    if (serverQuotes.length) {
       quotes = serverQuotes.concat(quotes);
       saveQuotes();
       populateCategories();
-      document.getElementById(
-        "syncStatus"
-      ).innerText = `Synced with server at ${new Date().toLocaleTimeString()}`;
-    })
-    .catch((err) => console.error("Failed to sync with server", err));
+      showNotification(
+        `Synced with server at ${new Date().toLocaleTimeString()}`
+      );
+    } else {
+      showNotification("No new server data. Using local only.");
+    }
+  });
 }
 
 newQuoteBtn.addEventListener("click", showRandomQuote);
@@ -166,9 +196,6 @@ newQuoteBtn.addEventListener("click", showRandomQuote);
 loadQuotes();
 populateCategories();
 createAddQuoteForm();
+syncQuotes();
 
-setInterval(() => {
-  syncWithServer();
-  document.getElementById("syncStatus").innerText =
-    "Next auto sync in 30 seconds...";
-}, 30000);
+setInterval(syncQuotes, 30000);
