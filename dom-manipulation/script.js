@@ -187,9 +187,7 @@ async function syncQuotes() {
     quotes = serverQuotes.concat(quotes);
     saveQuotes();
     populateCategories();
-    showNotification(
-      `Synced with server at ${new Date().toLocaleTimeString()}`
-    );
+    showNotification("Quotes synced with server!");
   } else {
     showNotification("No new server data. Using local only.");
   }
