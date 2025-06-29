@@ -9,9 +9,18 @@ function loadQuotes() {
     quotes = JSON.parse(storedQuotes);
   } else {
     quotes = [
-      { text: "The only limit to our realization of tomorrow is our doubts of today.", category: "Inspiration" },
-      { text: "Success is not final, failure is not fatal: It is the courage to continue that counts.", category: "Motivation" },
-      { text: "Life is what happens when you're busy making other plans.", category: "Life" }
+      {
+        text: "The only limit to our realization of tomorrow is our doubts of today.",
+        category: "Inspiration",
+      },
+      {
+        text: "Success is not final, failure is not fatal: It is the courage to continue that counts.",
+        category: "Motivation",
+      },
+      {
+        text: "Life is what happens when you're busy making other plans.",
+        category: "Life",
+      },
     ];
     saveQuotes();
   }
@@ -27,9 +36,10 @@ const categoryFilter = document.getElementById("categoryFilter");
 
 function showRandomQuote() {
   const selectedCategory = categoryFilter.value;
-  const filteredQuotes = selectedCategory === "all"
-    ? quotes
-    : quotes.filter(q => q.category === selectedCategory);
+  const filteredQuotes =
+    selectedCategory === "all"
+      ? quotes
+      : quotes.filter((q) => q.category === selectedCategory);
 
   if (filteredQuotes.length === 0) {
     quoteDisplay.innerHTML = "<p>No quotes available for this category.</p>";
@@ -45,7 +55,9 @@ function showRandomQuote() {
 
 function addQuote() {
   const quoteText = document.getElementById("newQuoteText").value.trim();
-  const quoteCategory = document.getElementById("newQuoteCategory").value.trim();
+  const quoteCategory = document
+    .getElementById("newQuoteCategory")
+    .value.trim();
 
   if (!quoteText || !quoteCategory) {
     alert("Please fill in both quote and category fields.");
@@ -59,6 +71,30 @@ function addQuote() {
   alert("Quote added successfully!");
   document.getElementById("newQuoteText").value = "";
   document.getElementById("newQuoteCategory").value = "";
+}
+
+function createAddQuoteForm() {
+  const formContainer = document.createElement("div");
+  formContainer.className = "section";
+
+  const textInput = document.createElement("input");
+  textInput.id = "newQuoteText";
+  textInput.type = "text";
+  textInput.placeholder = "Enter a new quote";
+
+  const categoryInput = document.createElement("input");
+  categoryInput.id = "newQuoteCategory";
+  categoryInput.type = "text";
+  categoryInput.placeholder = "Enter quote category";
+
+  const addButton = document.createElement("button");
+  addButton.innerText = "Add Quote";
+  addButton.onclick = addQuote;
+
+  formContainer.appendChild(textInput);
+  formContainer.appendChild(categoryInput);
+  formContainer.appendChild(addButton);
+  document.body.appendChild(formContainer);
 }
 
 function exportToJsonFile() {
@@ -75,24 +111,24 @@ function exportToJsonFile() {
 
 function importFromJsonFile(event) {
   const fileReader = new FileReader();
-  fileReader.onload = function(event) {
+  fileReader.onload = function (event) {
     try {
       const importedQuotes = JSON.parse(event.target.result);
       quotes.push(...importedQuotes);
       saveQuotes();
       populateCategories();
-      alert('Quotes imported successfully!');
+      alert("Quotes imported successfully!");
     } catch (error) {
-      alert('Failed to import quotes. Invalid JSON file.');
+      alert("Failed to import quotes. Invalid JSON file.");
     }
   };
   fileReader.readAsText(event.target.files[0]);
 }
 
 function populateCategories() {
-  const categories = [...new Set(quotes.map(q => q.category))];
+  const categories = [...new Set(quotes.map((q) => q.category))];
   categoryFilter.innerHTML = '<option value="all">All Categories</option>';
-  categories.forEach(category => {
+  categories.forEach((category) => {
     const option = document.createElement("option");
     option.value = category;
     option.textContent = category;
@@ -107,29 +143,32 @@ function filterQuotes() {
   showRandomQuote();
 }
 
-// Simulate server sync
 function syncWithServer() {
   fetch(API_URL)
-    .then(res => res.json())
-    .then(serverData => {
-      // Simulate conflict: overwrite local if server returns different content
-      const serverQuotes = serverData.slice(0, 3).map(post => ({
+    .then((res) => res.json())
+    .then((serverData) => {
+      const serverQuotes = serverData.slice(0, 3).map((post) => ({
         text: post.title,
-        category: "Server"
+        category: "Server",
       }));
       quotes = serverQuotes.concat(quotes);
       saveQuotes();
       populateCategories();
-      alert("Quotes synced with server. Conflicts resolved in favor of server data.");
+      document.getElementById(
+        "syncStatus"
+      ).innerText = `Synced with server at ${new Date().toLocaleTimeString()}`;
     })
-    .catch(err => console.error("Failed to sync with server", err));
+    .catch((err) => console.error("Failed to sync with server", err));
 }
 
 newQuoteBtn.addEventListener("click", showRandomQuote);
 
-// Initialization
 loadQuotes();
 populateCategories();
+createAddQuoteForm();
 
-// Periodic server sync every 30 seconds
-setInterval(syncWithServer, 30000);
+setInterval(() => {
+  syncWithServer();
+  document.getElementById("syncStatus").innerText =
+    "Next auto sync in 30 seconds...";
+}, 30000);
